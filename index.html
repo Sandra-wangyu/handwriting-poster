@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手寫風社群貼文產生器｜Mii Lab｜人生企劃室</title>
+<meta name="author" content="Mii Lab｜人生企劃室">
+<meta name="description" content="Mii Lab｜人生企劃室 出品 — 免費手寫風社群貼文產生器，內建 34 款免費中英文手寫字體">
+<link rel="canonical" href="#">
+
+<!-- 預設載入：只有基本 4 款字體 -->
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Caveat:wght@400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  /* 預設載入的手寫中文字：jf 粉圓 */
+  @font-face {
+    font-family: 'jf-openhuninn';
+    src: url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font/jf-openhuninn-2.0.ttf') format('truetype');
+    font-display: swap;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Microsoft JhengHei", "PingFang TC", sans-serif;
+    background: linear-gradient(135deg, #f5f1ec 0%, #e8e0d3 100%);
+    color: #3a3530;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; display: grid; gap: 18px; }
+  header { text-align: center; }
+  header h1 { font-size: 22px; color: #222; margin-bottom: 4px; }
+  header p { color: #666; font-size: 13px; }
+
+  /* 主畫布 */
+  #poster {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    transition: background 0.2s;
+  }
+  .content {
+    display: flex; flex-direction: column;
+    align-items: flex-start; gap: 4px;
+    transform: translate(-4%, 0) rotate(-3deg);
+  }
+  .content.layout-side { flex-direction: row; align-items: flex-end; gap: 16px; }
+  .zh-row, .en-row { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .en-row { margin-left: 30px; margin-top: -4px; position: relative; }
+  .zh {
+    font-family: 'jf-openhuninn', 'Ma Shan Zheng', cursive;
+    font-size: clamp(56px, 13vw, 130px);
+    line-height: 1.1; letter-spacing: 2px; user-select: none;
+  }
+  .deco-zh { font-size: clamp(36px, 8vw, 72px); line-height: 1; }
+  .en {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(26px, 5.5vw, 52px);
+    line-height: 1; font-weight: 700; user-select: none; position: relative;
+  }
+  .en.underlined::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -4px;
+    height: 3px; background: currentColor; border-radius: 2px;
+    transform: skewY(-1deg);
+  }
+  .deco-en { font-size: clamp(24px, 5vw, 44px); }
+
+  /* 控制面板 */
+  .panel {
+    background: #fff; padding: 18px; border-radius: 14px;
+    display: grid; gap: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  .section-title {
+    font-size: 13px; color: #888; font-weight: 700;
+    border-bottom: 1px solid #eee; padding-bottom: 4px; margin-top: 4px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-title .note { font-size: 11px; color: #aaa; font-weight: 400; }
+  .row {
+    display: grid; grid-template-columns: 80px 1fr;
+    gap: 10px; align-items: center;
+  }
+  label { font-size: 13px; color: #444; font-weight: 600; }
+  input[type=text] {
+    padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 14px; width: 100%;
+  }
+  input[type=color] {
+    width: 40px; height: 30px; border: none; cursor: pointer;
+    background: transparent; padding: 0;
+  }
+  .color-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .color-row span { font-size: 12px; color: #888; }
+  select {
+    padding: 8px; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 14px; width: 100%;
+  }
+  .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 4px; flex-wrap: wrap; }
+  button {
+    padding: 10px 18px; border: none; border-radius: 10px;
+    background: #222; color: #fff; font-size: 14px;
+    cursor: pointer; font-weight: 600;
+  }
+  button.ghost { background: #eee; color: #333; }
+  button.outline { background: #fff; color: #6b7a8f; border: 1px solid #6b7a8f; }
+  button:hover { opacity: 0.85; }
+
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 6px 10px; border-radius: 18px;
+    border: 1px solid #ddd; background: #fafafa;
+    color: #333; font-weight: 500;
+    cursor: pointer; font-size: 12px; white-space: nowrap;
+  }
+  .chip:hover { background: #eee; border-color: #bbb; }
+  .chip.active { background: #222; color: #fff; border-color: #222; }
+  .emoji-chip { font-size: 16px; padding: 4px 10px; color: #222; font-weight: 600; }
+
+  /* 長文模式時，短句專屬的 UI 隱藏 */
+  .panel.mode-long .short-only { display: none !important; }
+
+  /* 分類切換 tabs */
+  .tabs { gap: 4px; margin-bottom: 2px; }
+  .tab-chip {
+    padding: 8px 16px; border-radius: 20px 20px 0 0;
+    border: 1px solid #eee; border-bottom: none;
+    background: #f0f0f0; color: #888;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .tab-chip:hover { background: #e8e8e8; color: #555; }
+  .tab-chip.active {
+    background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
+    color: #6b7a8f; border-color: #6b7a8f;
+    box-shadow: 0 -2px 8px rgba(43,127,255,0.1);
+  }
+
+  /* 浮水印 */
+  .watermark {
+    position: absolute; bottom: 14px; right: 16px;
+    font-size: 10px; color: rgba(0,0,0,0.25);
+    font-family: -apple-system, "Microsoft JhengHei", sans-serif;
+    letter-spacing: 1px; pointer-events: none;
+    user-select: none;
+  }
+  .watermark.hidden { display: none; }
+
+  /* 長文模式 */
+  .content.long-mode {
+    transform: none;
+    align-items: stretch;
+    width: 85%;
+    padding: 20px 0;
+  }
+  .content.long-mode .zh-row,
+  .content.long-mode .en-row {
+    display: none;
+  }
+  .long-text {
+    display: none;
+    font-family: 'jf-openhuninn', 'Ma Shan Zheng', cursive;
+    line-height: 1.9;
+    letter-spacing: 2px;
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-word;
+    width: 100%;
+    user-select: none;
+  }
+  .content.long-mode .long-text { display: block; }
+  .long-text.size-tiny { font-size: clamp(14px, 3vw, 24px); line-height: 1.8; letter-spacing: 1px; }
+  .long-text.size-small { font-size: clamp(20px, 4.5vw, 38px); }
+  .long-text.size-large { font-size: clamp(28px, 6vw, 54px); }
+  .long-text.align-left { text-align: left; }
+  .long-text.align-center { text-align: center; }
+  .long-text.align-right { text-align: right; }
+
+  textarea {
+    padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 14px; width: 100%; resize: vertical;
+    font-family: inherit; line-height: 1.6;
+    min-height: 100px;
+  }
+  textarea:focus { outline: none; border-color: #6b7a8f; }
+
+  .counter {
+    font-size: 12px; color: #888; font-weight: 600;
+    padding: 4px 10px; background: #f5f1ec; border-radius: 10px;
+    letter-spacing: 1px;
+  }
+  .counter.warn { color: #c17767; background: #fde8e0; }
+
+  /* 底色圖案（方格 / 點點 / 橫線） */
+  #poster.pattern-grid {
+    background-image:
+      linear-gradient(rgba(0,0,0,0.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.12) 1px, transparent 1px) !important;
+    background-size: 40px 40px !important;
+    background-repeat: repeat !important;
+  }
+  #poster.pattern-dot {
+    background-image: radial-gradient(rgba(0,0,0,0.22) 1.8px, transparent 2px) !important;
+    background-size: 28px 28px !important;
+    background-repeat: repeat !important;
+  }
+  #poster.pattern-line {
+    background-image: linear-gradient(to bottom, transparent 38px, rgba(0,0,0,0.14) 39px, rgba(0,0,0,0.14) 40px) !important;
+    background-size: 100% 40px !important;
+    background-repeat: repeat !important;
+  }
+  /* 深色底：圖案自動變白色線條 */
+  #poster.dark-bg.pattern-grid {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.18) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px) !important;
+  }
+  #poster.dark-bg.pattern-dot {
+    background-image: radial-gradient(rgba(255,255,255,0.28) 1.8px, transparent 2px) !important;
+  }
+  #poster.dark-bg.pattern-line {
+    background-image: linear-gradient(to bottom, transparent 38px, rgba(255,255,255,0.22) 39px, rgba(255,255,255,0.22) 40px) !important;
+  }
+
+  /* 透明背景棋盤格（僅預覽時顯示，下載不會帶） */
+  #poster.transparent {
+    background-image:
+      linear-gradient(45deg, #d4cfc7 25%, transparent 25%),
+      linear-gradient(-45deg, #d4cfc7 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #d4cfc7 75%),
+      linear-gradient(-45deg, transparent 75%, #d4cfc7 75%) !important;
+    background-size: 24px 24px !important;
+    background-position: 0 0, 0 12px, 12px -12px, 12px 0 !important;
+    background-color: #f5f1ec !important;
+  }
+  #poster.transparent::before {
+    content: '透明背景 · 下載後無底色';
+    position: absolute; top: 12px; left: 16px;
+    font-size: 11px; color: rgba(0,0,0,0.35);
+    background: rgba(255,255,255,0.7); padding: 3px 8px;
+    border-radius: 10px; letter-spacing: 1px;
+  }
+
+  .font-status {
+    font-size: 11px; color: #aaa; margin-left: 8px;
+  }
+  .font-loaded { color: #22c55e; }
+  .font-loading { color: #f59e0b; }
+
+  /* Modal */
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 14px;
+    padding: 24px; max-width: 440px; width: 100%;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  }
+  .modal h3 { font-size: 18px; margin-bottom: 12px; }
+  .modal .info-list {
+    background: #f8f9fa; padding: 12px 14px; border-radius: 8px;
+    margin: 12px 0; font-size: 13px; line-height: 1.7;
+  }
+  .modal .info-list b { color: #6b7a8f; }
+  .modal .warn {
+    background: #ede4d3; color: #7c6f57; padding: 10px 12px;
+    border-radius: 8px; font-size: 12px; margin-top: 8px;
+  }
+  .progress-wrap {
+    display: none; margin-top: 14px;
+  }
+  .progress-wrap.show { display: block; }
+  .progress-bar {
+    height: 8px; background: #eee; border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, #6b7a8f, #c88b8b);
+    width: 0%; transition: width 0.3s;
+  }
+  .progress-text {
+    font-size: 12px; color: #666; margin-top: 6px; text-align: center;
+  }
+
+  footer {
+    text-align: center; color: #999; font-size: 12px; padding: 12px;
+  }
+  footer a { color: #6b7a8f; text-decoration: none; }
+
+  /* 授權與出處 */
+  .credits {
+    background: #fff; border-radius: 14px; padding: 8px 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  .credits summary {
+    cursor: pointer; padding: 10px 0; font-weight: 700; color: #333;
+    font-size: 14px; list-style: none; display: flex;
+    justify-content: space-between; align-items: center;
+  }
+  .credits summary::after {
+    content: '▼'; font-size: 10px; color: #999; transition: transform 0.2s;
+  }
+  .credits[open] summary::after { transform: rotate(180deg); }
+  .credits summary::-webkit-details-marker { display: none; }
+  .credits-body { padding: 8px 0 16px; font-size: 13px; line-height: 1.8; color: #444; }
+  .credits-body h4 { font-size: 13px; color: #6b7a8f; margin: 14px 0 6px; }
+  .credits-body ul { list-style: none; padding-left: 0; }
+  .credits-body li {
+    padding: 4px 0; border-bottom: 1px dashed #f0f0f0;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .credits-body li:last-child { border-bottom: none; }
+  .credits-body .font-name { font-weight: 600; color: #222; }
+  .credits-body .font-author { color: #888; font-size: 12px; }
+  .credits-body a {
+    color: #6b7a8f; text-decoration: none; font-size: 12px;
+    padding: 2px 8px; border: 1px solid #cfe3ff; border-radius: 10px;
+  }
+  .credits-body a:hover { background: #e7f1ff; }
+  .notice {
+    background: linear-gradient(135deg, #ede4d3 0%, #e5d9c7 100%);
+    border: 1px solid #d4c9b5; border-radius: 10px;
+    padding: 14px 16px; margin-top: 16px; font-size: 13px; line-height: 1.7;
+  }
+  .notice b { color: #8a6a47; }
+  .notice a { color: #6b7a8f; font-weight: 600; }
+  .thanks {
+    text-align: center; padding: 12px; margin-top: 12px;
+    color: #666; font-size: 13px; font-style: italic;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>手寫風社群貼文產生器</h1>
+    <p>改字 · 換色 · 一鍵下載 PNG ｜ 內建 34 款免費手寫字體</p>
+    <p style="margin-top:6px;font-size:12px;color:#888;">made with ♡ by <b style="color:#6b7a8f;">Mii Lab｜人生企劃室</b></p>
+  </header>
+
+  <!-- 預覽 -->
+  <div id="poster" style="background:#f5f1ec;">
+    <div class="content" id="content">
+      <div class="zh-row">
+        <span class="zh" id="zhText" style="color:#6b7a8f;">好的</span>
+        <span class="zh deco-zh" id="zhDeco" style="color:#6b7a8f;">!!</span>
+      </div>
+      <div class="en-row">
+        <span class="en" id="enText" style="color:#c88b8b;">okay</span>
+        <span class="en deco-en" id="enDeco" style="color:#c88b8b;"></span>
+      </div>
+      <div class="long-text size-small align-left" id="longText" style="color:#6b7a8f;"></div>
+    </div>
+    <div class="watermark" id="watermark">Mii Lab｜人生企劃室</div>
+  </div>
+
+  <div class="panel">
+    <!-- 模式切換（最上方主要入口） -->
+    <div class="section-title" style="color:#6b7a8f;font-size:14px;">模式</div>
+    <div class="chip-row tabs" id="modeTabs">
+      <button class="tab-chip active" data-mode="short">短句（貼紙／金句）</button>
+      <button class="tab-chip" data-mode="long">長文（小語／日記／限動）</button>
+    </div>
+
+    <!-- 底色圖案（搶眼放最上面） -->
+    <div class="section-title">底色圖案<span class="note">純色 · 方格紙 · 點點 · 橫線紙</span></div>
+    <div class="chip-row">
+      <button class="chip pattern-btn active" data-pattern="none">純色</button>
+      <button class="chip pattern-btn" data-pattern="grid">方格紙</button>
+      <button class="chip pattern-btn" data-pattern="dot">點點</button>
+      <button class="chip pattern-btn" data-pattern="line">橫線紙</button>
+    </div>
+
+    <!-- 長文輸入區（切到長文模式才顯示） -->
+    <div id="longControls" style="display:none;">
+      <div class="row" style="grid-template-columns:80px 1fr; align-items:flex-start;">
+        <label style="padding-top:10px;">內容</label>
+        <textarea id="longTextInput" maxlength="200" placeholder="寫下你想說的話⋯
+每一行會自動保留換行"></textarea>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-left:92px; flex-wrap:wrap; gap:8px;">
+        <div class="chip-row">
+          <span style="font-size:12px;color:#888;align-self:center;margin-right:4px;">字級</span>
+          <button class="chip size-btn" data-size="tiny">迷你</button>
+          <button class="chip size-btn active" data-size="small">小字</button>
+          <button class="chip size-btn" data-size="large">大字</button>
+        </div>
+        <div class="counter" id="charCounter">0 / 200</div>
+      </div>
+      <div class="chip-row" style="margin-top:8px; padding-left:92px;">
+        <span style="font-size:12px;color:#888;align-self:center;margin-right:4px;">對齊</span>
+        <button class="chip align-btn active" data-align="left">靠左</button>
+        <button class="chip align-btn" data-align="center">置中</button>
+        <button class="chip align-btn" data-align="right">靠右</button>
+      </div>
+    </div>
+
+    <!-- 範本 -->
+    <div class="section-title short-only" id="templateSection">常用範本<span class="note">點擊快速套用</span></div>
+    <div class="chip-row tabs short-only" id="templateTabs">
+      <button class="tab-chip active" data-tab="business">商用回覆</button>
+      <button class="tab-chip" data-tab="daily">日常</button>
+      <button class="tab-chip" data-tab="meme">鄉民梗</button>
+    </div>
+    <div class="chip-row short-only" id="templates"><!-- 動態產生 --></div>
+
+    <!-- 文字 -->
+    <div class="section-title short-only">文字內容</div>
+    <div class="row short-only">
+      <label>中文主字</label>
+      <input type="text" id="zhInput" value="好的" maxlength="15">
+    </div>
+    <div class="row short-only">
+      <label>中文裝飾</label>
+      <input type="text" id="zhDecoInput" value="!!" maxlength="10" placeholder="例：!!  ♡  ☺  ✓">
+    </div>
+    <div class="row short-only">
+      <label>英文主字</label>
+      <input type="text" id="enInput" value="okay" maxlength="25">
+    </div>
+    <div class="row short-only">
+      <label>英文裝飾</label>
+      <input type="text" id="enDecoInput" value="" maxlength="10" placeholder="例：!!!  ✓  ♡">
+    </div>
+
+    <!-- 快速加裝飾 -->
+    <div class="section-title short-only">快速加裝飾<span class="note">接在中文裝飾後</span></div>
+    <div class="chip-row short-only">
+      <button class="chip emoji-chip" data-add="!!">!!</button>
+      <button class="chip emoji-chip" data-add="!!!">!!!</button>
+      <button class="chip emoji-chip" data-add="~">~</button>
+      <button class="chip emoji-chip" data-add="♡">♡</button>
+      <button class="chip emoji-chip" data-add="✓">✓</button>
+      <button class="chip emoji-chip" data-add="☺">☺</button>
+      <button class="chip emoji-chip" data-add="★">★</button>
+      <button class="chip emoji-chip" data-add="♪">♪</button>
+    </div>
+
+    <!-- 字體 -->
+    <div class="section-title">
+      字體選擇
+      <span class="note" id="fontCountNote">目前載入 4 款</span>
+    </div>
+    <div class="row">
+      <label>中文字體</label>
+      <select id="zhFont"></select>
+    </div>
+    <div class="row">
+      <label>英文字體</label>
+      <select id="enFont"></select>
+    </div>
+    <div class="btn-row">
+      <button class="outline" id="loadAllBtn">載入全部字體（更多選擇）</button>
+    </div>
+
+    <!-- 配色 -->
+    <div class="section-title">配色<span class="note">莫蘭迪 · 黑白 · 自訂</span></div>
+    <div class="chip-row">
+      <button class="chip" data-bg="#f5f1ec" data-zh="#6b7a8f" data-en="#c88b8b">灰藍霧粉</button>
+      <button class="chip" data-bg="#ebe5db" data-zh="#4a5d52" data-en="#b08968">墨綠陶土</button>
+      <button class="chip" data-bg="#e8d8cf" data-zh="#6d4c41" data-en="#8a7a6d">玫瑰棕</button>
+      <button class="chip" data-bg="#dfe4e1" data-zh="#5a6b73" data-en="#a89181">霧灰大地</button>
+      <button class="chip" data-bg="#f4e9d8" data-zh="#7c6f57" data-en="#9d5c4e">奶油赭紅</button>
+      <button class="chip" data-bg="#e5dce5" data-zh="#5c4f6b" data-en="#a68ba0">紫灰藕粉</button>
+      <button class="chip" data-bg="#3a3530" data-zh="#e8d5c4" data-en="#c88b8b">深棕暖粉</button>
+      <button class="chip" data-bg="#ffffff" data-zh="#6b7a8f" data-en="#c88b8b">純白優雅</button>
+    </div>
+    <div class="chip-row" style="margin-top:6px;">
+      <span style="font-size:11px;color:#999;align-self:center;margin-right:4px;">黑白款</span>
+      <button class="chip" data-bg="#ffffff" data-zh="#000000" data-en="#333333">經典黑白</button>
+      <button class="chip" data-bg="#000000" data-zh="#ffffff" data-en="#e0e0e0">反白（黑底白字）</button>
+      <button class="chip" data-bg="#ffffff" data-zh="#2a2a2a" data-en="#6a6a6a">素雅灰階</button>
+      <button class="chip" data-bg="#1a1a1a" data-zh="#f5f5f5" data-en="#aaaaaa">低調深灰</button>
+    </div>
+    <div class="row">
+      <label>自訂色</label>
+      <div class="color-row">
+        <span>背景</span><input type="color" id="bgColor" value="#f5f1ec">
+        <span>中文</span><input type="color" id="zhColor" value="#6b7a8f">
+        <span>英文</span><input type="color" id="enColor" value="#c88b8b">
+      </div>
+    </div>
+
+    <!-- 版面 -->
+    <div class="section-title">版面</div>
+    <div class="chip-row short-only">
+      <button class="chip active" data-layout="stack">中文上 / 英文下</button>
+      <button class="chip" data-layout="side">中文 / 英文並排</button>
+      <button class="chip" data-underline="1">英文加底線</button>
+    </div>
+    <div class="chip-row" style="margin-top:6px;">
+      <button class="chip active" data-watermark="1">顯示浮水印</button>
+      <button class="chip" data-transparent="1">透明背景</button>
+    </div>
+    <div class="row" style="margin-top:4px;">
+      <label>浮水印文字</label>
+      <input type="text" id="watermarkInput" value="Mii Lab｜人生企劃室" maxlength="30" placeholder="留空不顯示">
+    </div>
+
+
+    <!-- 下載 -->
+    <div class="btn-row">
+      <button id="downloadBtn">下載 PNG（高解析度）</button>
+      <button class="ghost" id="resetBtn">重設</button>
+    </div>
+  </div>
+
+  <!-- 字體授權與出處（可展開） -->
+  <details class="credits">
+    <summary>字體授權與出處（點擊展開）</summary>
+    <div class="credits-body">
+      <p style="color:#666;">本工具所使用的字體<b>全部為免費商用授權（SIL Open Font License 1.1）</b>，感謝以下字體設計師的無私分享：</p>
+
+      <h4>台灣 / 繁體中文開源字體</h4>
+      <ul>
+        <li>
+          <span><span class="font-name">jf 粉圓</span> <span class="font-author">by justfont 團隊</span></span>
+          <a href="https://github.com/justfont/open-huninn-font" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">清松手寫體</span> <span class="font-author">by 清松（max32002 補完）— 真人原子筆手寫</span></span>
+          <a href="https://github.com/max32002/JasonHandWritingFonts" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">芫荽 Iansui</span> <span class="font-author">by ButTaiwan（改自 Klee One，台灣繁體優化）</span></span>
+          <a href="https://github.com/ButTaiwan/iansui" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">源樣字型 GenYo Serif</span> <span class="font-author">by ButTaiwan（改自思源宋體）</span></span>
+          <a href="https://github.com/ButTaiwan/genyo-font" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">假粉圓體 FakePearl</span> <span class="font-author">by max32002（改自 jf 粉圓）</span></span>
+          <a href="https://github.com/max32002/FakePearl" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">苦累蛙圓體</span> <span class="font-author">by max32002（改自 Zen Kurenaido）</span></span>
+          <a href="https://github.com/max32002/kurewa-gothic" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">獅尾春影</span> <span class="font-author">by max32002（改自思源宋體）</span></span>
+          <a href="https://github.com/max32002/swei-spring" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">獅尾圓體</span> <span class="font-author">by max32002（改自思源黑體）</span></span>
+          <a href="https://github.com/max32002/swei-gothic" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">莫子手寫</span> <span class="font-author">by max32002（改自 Zen Maru Gothic）</span></span>
+          <a href="https://github.com/max32002/maruko-gothic" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">獅尾扇黑體</span> <span class="font-author">by max32002（改自思源黑體）</span></span>
+          <a href="https://github.com/max32002/swei-fan-sans" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">莫大毛筆字體</span> <span class="font-author">by max32002（改自 Aoyagi 青柳衡山毛筆）</span></span>
+          <a href="https://github.com/max32002/bakudaifont" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">內海字體</span> <span class="font-author">by max32002（改自 Seto 瀨戶字體）</span></span>
+          <a href="https://github.com/max32002/naikaifont" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+        <li>
+          <span><span class="font-name">花園肉丸</span> <span class="font-author">by max32002（改自花園明朝）</span></span>
+          <a href="https://github.com/max32002/max-hana" target="_blank" rel="noopener">GitHub 出處</a>
+        </li>
+      </ul>
+
+      <h4>中文書法字體（Google Fonts）</h4>
+      <ul>
+        <li><span><span class="font-name">Ma Shan Zheng 馬善政毛筆</span> <span class="font-author">by Ma Shanzheng</span></span>
+          <a href="https://fonts.google.com/specimen/Ma+Shan+Zheng" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">Liu Jian Mao Cao 劉建毛草</span> <span class="font-author">by Liu Jian</span></span>
+          <a href="https://fonts.google.com/specimen/Liu+Jian+Mao+Cao" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">Zhi Mang Xing 鄭板橋體</span> <span class="font-author">by Zhi Ma</span></span>
+          <a href="https://fonts.google.com/specimen/Zhi+Mang+Xing" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">Long Cang 龍藏體</span> <span class="font-author">by Zhao Weimin</span></span>
+          <a href="https://fonts.google.com/specimen/Long+Cang" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">ZCOOL KuaiLe 快樂體</span> <span class="font-author">by Station Ziku 站酷</span></span>
+          <a href="https://fonts.google.com/specimen/ZCOOL+KuaiLe" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">ZCOOL XiaoWei 曉偉</span> <span class="font-author">by Station Ziku 站酷</span></span>
+          <a href="https://fonts.google.com/specimen/ZCOOL+XiaoWei" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">ZCOOL QingKe HuangYou 清客</span> <span class="font-author">by Station Ziku 站酷</span></span>
+          <a href="https://fonts.google.com/specimen/ZCOOL+QingKe+HuangYou" target="_blank" rel="noopener">Google Fonts</a></li>
+      </ul>
+
+      <h4>日系手寫字體（Google Fonts，支援繁體漢字）</h4>
+      <ul>
+        <li><span><span class="font-name">Klee One</span> <span class="font-author">by Fontworks Inc.</span></span>
+          <a href="https://fonts.google.com/specimen/Klee+One" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">Zen Kurenaido</span> <span class="font-author">by Yoshimichi Ohira</span></span>
+          <a href="https://fonts.google.com/specimen/Zen+Kurenaido" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">Hachi Maru Pop</span> <span class="font-author">by Sans co., ltd.</span></span>
+          <a href="https://fonts.google.com/specimen/Hachi+Maru+Pop" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">Yuji Syuku</span> <span class="font-author">by Kazuhi Endo</span></span>
+          <a href="https://fonts.google.com/specimen/Yuji+Syuku" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">DotGothic16</span> <span class="font-author">by Fontworks Inc.</span></span>
+          <a href="https://fonts.google.com/specimen/DotGothic16" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span><span class="font-name">Mochiy Pop P One</span> <span class="font-author">by Ren Sasaki</span></span>
+          <a href="https://fonts.google.com/specimen/Mochiy+Pop+P+One" target="_blank" rel="noopener">Google Fonts</a></li>
+      </ul>
+
+      <h4>英文手寫字體（Google Fonts）</h4>
+      <ul>
+        <li><span class="font-name">Caveat</span>
+          <a href="https://fonts.google.com/specimen/Caveat" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Kalam</span>
+          <a href="https://fonts.google.com/specimen/Kalam" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Gochi Hand</span>
+          <a href="https://fonts.google.com/specimen/Gochi+Hand" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Shadows Into Light</span>
+          <a href="https://fonts.google.com/specimen/Shadows+Into+Light" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Indie Flower</span>
+          <a href="https://fonts.google.com/specimen/Indie+Flower" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Homemade Apple</span>
+          <a href="https://fonts.google.com/specimen/Homemade+Apple" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Permanent Marker</span>
+          <a href="https://fonts.google.com/specimen/Permanent+Marker" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Patrick Hand</span>
+          <a href="https://fonts.google.com/specimen/Patrick+Hand" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Architects Daughter</span>
+          <a href="https://fonts.google.com/specimen/Architects+Daughter" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Rock Salt</span>
+          <a href="https://fonts.google.com/specimen/Rock+Salt" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Dancing Script</span>
+          <a href="https://fonts.google.com/specimen/Dancing+Script" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Satisfy</span>
+          <a href="https://fonts.google.com/specimen/Satisfy" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Pacifico</span>
+          <a href="https://fonts.google.com/specimen/Pacifico" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Sacramento</span>
+          <a href="https://fonts.google.com/specimen/Sacramento" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Reenie Beanie</span>
+          <a href="https://fonts.google.com/specimen/Reenie+Beanie" target="_blank" rel="noopener">Google Fonts</a></li>
+        <li><span class="font-name">Bad Script</span>
+          <a href="https://fonts.google.com/specimen/Bad+Script" target="_blank" rel="noopener">Google Fonts</a></li>
+      </ul>
+
+      <div class="thanks">特別感謝以上字體設計師與 justfont、max32002、ButTaiwan、清松、Google Fonts、各位設計師的無私分享，讓我們能免費使用這些優秀的作品。</div>
+
+      <div class="notice">
+        <b>侵權下架聲明</b><br>
+        本工具僅作為整合展示用途，所有字體版權皆歸原作者所有。<br>
+        若本工具使用之字體有任何侵權疑慮，或原作者不願被收錄，請立刻聯繫作者：<br><br>
+        ・Instagram：<a href="https://instagram.com/mkt_girleat" target="_blank" rel="noopener">@mkt_girleat</a><br>
+        ・Threads：<a href="https://www.threads.net/@mkt_girleat" target="_blank" rel="noopener">@mkt_girleat</a><br><br>
+        收到通知後將<b>立即下架處理</b>。
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    <p style="margin-bottom:4px;">© 2026 <b>Mii Lab｜人生企劃室</b>　免費工具　歡迎分享</p>
+    <p style="font-size:11px;color:#bbb;">
+      字體版權歸原作者所有　｜　聯絡作者：
+      <a href="https://instagram.com/mkt_girleat" target="_blank" rel="noopener">Instagram @mkt_girleat</a>
+      ・
+      <a href="https://www.threads.net/@mkt_girleat" target="_blank" rel="noopener">Threads @mkt_girleat</a>
+    </p>
+  </footer>
+</div>
+
+<!-- 確認載入視窗 -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>載入全部字體</h3>
+    <p style="color:#555;font-size:14px;">即將下載更多免費手寫字體到你的瀏覽器。</p>
+    <div class="info-list">
+      • 共 <b id="modalCount">--</b> 款字體<br>
+      • 檔案大小約 <b id="modalSize">--</b><br>
+      • 預估時間：<b id="modalTime">--</b>（依網速而定）<br>
+      • 載入後會**快取在瀏覽器**，下次開啟很快
+    </div>
+    <div class="warn">
+      小提醒：中文字體檔案較大，建議在 Wi-Fi 下載。<br>
+      取消也沒關係，目前的 4 款字體已經夠用。
+    </div>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">準備中...</div>
+    </div>
+    <div class="btn-row" id="modalBtns" style="margin-top:18px;">
+      <button class="ghost" id="modalCancel">取消</button>
+      <button id="modalConfirm">確認載入</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+
+  // === 字體資料 ===
+  const DEFAULT_FONTS_ZH = [
+    { name: 'jf 粉圓', value: "'jf-openhuninn', cursive", lang: 'zh', label: '圓潤可愛' },
+    { name: '馬善政毛筆', value: "'Ma Shan Zheng', cursive", lang: 'zh', label: '毛筆書法' },
+  ];
+  const DEFAULT_FONTS_EN = [
+    { name: 'Caveat', value: "'Caveat', cursive", lang: 'en', label: '圓潤手寫' },
+    { name: 'Kalam', value: "'Kalam', cursive", lang: 'en', label: '粉筆感' },
+  ];
+
+  // 可延伸載入的字體（全部 SIL OFL 免費商用）
+  const EXTRA_FONTS = [
+    // 台灣開源字體（CDN 載入）
+    { name: '清松手寫體 1', value: "'JasonHandwriting1', cursive", lang: 'zh', label: '真人原子筆手寫', src: 'https://cdn.jsdelivr.net/gh/max32002/JasonHandWritingFonts/webfont/JasonHandwriting1-Regular.woff2', format: 'woff2', size: 8 },
+    { name: '清松手寫體 2', value: "'JasonHandwriting2', cursive", lang: 'zh', label: '圓潤手寫', src: 'https://cdn.jsdelivr.net/gh/max32002/JasonHandWritingFonts/webfont/JasonHandwriting2-Regular.woff2', format: 'woff2', size: 8 },
+    { name: '芫荽', value: "'Iansui', cursive", lang: 'zh', label: '台灣版鉛筆楷書', src: 'https://cdn.jsdelivr.net/gh/ButTaiwan/iansui/fonts/ttf/Iansui-Regular.ttf', format: 'truetype', size: 6 },
+    { name: '源樣字型', value: "'GenYoMin', serif", lang: 'zh', label: '文青明朝', src: 'https://cdn.jsdelivr.net/gh/ButTaiwan/genyo-font/otf/GenYoMin-TW-R.otf', format: 'opentype', size: 10 },
+    { name: '假粉圓體', value: "'FakePearl', sans-serif", lang: 'zh', label: '粉圓衍生', src: 'https://cdn.jsdelivr.net/gh/max32002/FakePearl/webfont/FakePearl-Regular.woff2', format: 'woff2', size: 5 },
+    { name: '苦累蛙圓體', value: "'KurewaGothic', sans-serif", lang: 'zh', label: '細手寫繁體', src: 'https://cdn.jsdelivr.net/gh/max32002/kurewa-gothic/webfont/KurewaGothicTC-Regular.woff2', format: 'woff2', size: 4 },
+    { name: '獅尾春影', value: "'SweiSpring', serif", lang: 'zh', label: '春天明朝', src: 'https://cdn.jsdelivr.net/gh/max32002/swei-spring/webfont/SweiSpringCJKtc-Regular.woff2', format: 'woff2', size: 6 },
+    { name: '獅尾圓體', value: "'SweiGothic', sans-serif", lang: 'zh', label: '簡約無襯線', src: 'https://cdn.jsdelivr.net/gh/max32002/swei-gothic/webfont/SweiGothicCJKtc-Regular.woff2', format: 'woff2', size: 5 },
+    { name: '莫子手寫', value: "'MarukoGothic', sans-serif", lang: 'zh', label: '日式圓體', src: 'https://cdn.jsdelivr.net/gh/max32002/maruko-gothic/webfont/MarukoGothicCJKtc-Regular.woff2', format: 'woff2', size: 4 },
+    { name: '獅尾扇黑體', value: "'SweiFanSans', sans-serif", lang: 'zh', label: '摺扇感黑體', src: 'https://cdn.jsdelivr.net/gh/max32002/swei-fan-sans/webfont/SweiFanSansCJKtc-Regular.woff2', format: 'woff2', size: 5 },
+    { name: '莫大毛筆', value: "'Bakudai', cursive", lang: 'zh', label: '毛筆書法', src: 'https://cdn.jsdelivr.net/gh/max32002/bakudaifont/webfont/Bakudai-Regular.woff2', format: 'woff2', size: 5 },
+    { name: '內海字體', value: "'Naikai', sans-serif", lang: 'zh', label: '清爽楷書', src: 'https://cdn.jsdelivr.net/gh/max32002/naikaifont/webfont/NaikaiFont-Regular-Lite.woff2', format: 'woff2', size: 2 },
+    { name: '花園肉丸', value: "'HanaMeatball', serif", lang: 'zh', label: '圓潤明朝', src: 'https://cdn.jsdelivr.net/gh/max32002/max-hana/webfont/HanaMeatball-Regular.woff2', format: 'woff2', size: 3 },
+    // 中文手寫（Google Fonts）
+    { name: '劉建毛草', value: "'Liu Jian Mao Cao', cursive", lang: 'zh', label: '狂野草書', google: 'Liu+Jian+Mao+Cao', size: 8 },
+    { name: '鄭板橋體', value: "'Zhi Mang Xing', cursive", lang: 'zh', label: '半草書', google: 'Zhi+Mang+Xing', size: 8 },
+    { name: '龍藏體', value: "'Long Cang', cursive", lang: 'zh', label: '行書手寫', google: 'Long+Cang', size: 7 },
+    { name: 'ZCOOL 快樂體', value: "'ZCOOL KuaiLe', cursive", lang: 'zh', label: '粗筆可愛', google: 'ZCOOL+KuaiLe', size: 3 },
+    { name: 'ZCOOL 曉偉', value: "'ZCOOL XiaoWei', serif", lang: 'zh', label: '復古明體', google: 'ZCOOL+XiaoWei', size: 3 },
+    { name: 'ZCOOL 清客', value: "'ZCOOL QingKe HuangYou', cursive", lang: 'zh', label: '大字報', google: 'ZCOOL+QingKe+HuangYou', size: 3 },
+    { name: 'Klee One 楷書', value: "'Klee One', cursive", lang: 'zh', label: '日系鉛筆楷書', google: 'Klee+One:wght@400;600', size: 4 },
+    { name: 'Zen Kurenaido', value: "'Zen Kurenaido', sans-serif", lang: 'zh', label: '細手寫', google: 'Zen+Kurenaido', size: 3 },
+    { name: 'Hachi Maru Pop', value: "'Hachi Maru Pop', cursive", lang: 'zh', label: '圓滾滾可愛', google: 'Hachi+Maru+Pop', size: 2 },
+    { name: 'Yuji Syuku', value: "'Yuji Syuku', serif", lang: 'zh', label: '日系毛筆', google: 'Yuji+Syuku', size: 2 },
+    { name: 'DotGothic16', value: "'DotGothic16', sans-serif", lang: 'zh', label: '點陣像素', google: 'DotGothic16', size: 2 },
+    { name: 'Mochiy Pop', value: "'Mochiy Pop P One', sans-serif", lang: 'zh', label: '麻糬泡泡', google: 'Mochiy+Pop+P+One', size: 2 },
+    // 英文手寫（Google Fonts）
+    { name: 'Gochi Hand', value: "'Gochi Hand', cursive", lang: 'en', label: '可愛粗筆', google: 'Gochi+Hand', size: 0.1 },
+    { name: 'Shadows Into Light', value: "'Shadows Into Light', cursive", lang: 'en', label: '細長手寫', google: 'Shadows+Into+Light', size: 0.1 },
+    { name: 'Indie Flower', value: "'Indie Flower', cursive", lang: 'en', label: '花體圓潤', google: 'Indie+Flower', size: 0.1 },
+    { name: 'Homemade Apple', value: "'Homemade Apple', cursive", lang: 'en', label: '飄逸手寫', google: 'Homemade+Apple', size: 0.1 },
+    { name: 'Permanent Marker', value: "'Permanent Marker', cursive", lang: 'en', label: '麥克筆', google: 'Permanent+Marker', size: 0.1 },
+    { name: 'Patrick Hand', value: "'Patrick Hand', cursive", lang: 'en', label: '乾淨手寫', google: 'Patrick+Hand', size: 0.1 },
+    { name: 'Architects Daughter', value: "'Architects Daughter', cursive", lang: 'en', label: '建築師筆記', google: 'Architects+Daughter', size: 0.1 },
+    { name: 'Rock Salt', value: "'Rock Salt', cursive", lang: 'en', label: '粗糙塗鴉', google: 'Rock+Salt', size: 0.1 },
+    { name: 'Dancing Script', value: "'Dancing Script', cursive", lang: 'en', label: '優雅連筆', google: 'Dancing+Script:wght@400;700', size: 0.1 },
+    { name: 'Satisfy', value: "'Satisfy', cursive", lang: 'en', label: '歐美簽名', google: 'Satisfy', size: 0.1 },
+    { name: 'Pacifico', value: "'Pacifico', cursive", lang: 'en', label: '復古招牌', google: 'Pacifico', size: 0.1 },
+    { name: 'Sacramento', value: "'Sacramento', cursive", lang: 'en', label: '優雅草書', google: 'Sacramento', size: 0.1 },
+    { name: 'Reenie Beanie', value: "'Reenie Beanie', cursive", lang: 'en', label: '兒童塗鴉', google: 'Reenie+Beanie', size: 0.1 },
+    { name: 'Bad Script', value: "'Bad Script', cursive", lang: 'en', label: '粗筆急寫', google: 'Bad+Script', size: 0.1 },
+  ];
+
+  let extraLoaded = false;
+
+  // === 初始化字體下拉 ===
+  function populateFontSelect() {
+    const zhSel = $('zhFont');
+    const enSel = $('enFont');
+    zhSel.innerHTML = '';
+    enSel.innerHTML = '';
+
+    const addOpt = (sel, f, isExtra = false) => {
+      const opt = document.createElement('option');
+      opt.value = f.value;
+      opt.textContent = `${f.name}（${f.label}）${isExtra && !extraLoaded ? ' 🔒' : ''}`;
+      if (isExtra && !extraLoaded) opt.disabled = true;
+      sel.appendChild(opt);
+    };
+
+    DEFAULT_FONTS_ZH.forEach(f => addOpt(zhSel, f));
+    DEFAULT_FONTS_EN.forEach(f => addOpt(enSel, f));
+
+    EXTRA_FONTS.forEach(f => {
+      if (f.lang === 'zh') addOpt(zhSel, f, true);
+      else addOpt(enSel, f, true);
+    });
+
+    const total = 4 + (extraLoaded ? EXTRA_FONTS.length : 0);
+    $('fontCountNote').textContent = extraLoaded
+      ? `✅ 全部 ${total} 款已載入`
+      : `目前 4 款，可擴充至 ${4 + EXTRA_FONTS.length} 款`;
+  }
+  populateFontSelect();
+
+  // === Modal 控制 ===
+  const totalExtraSize = EXTRA_FONTS.reduce((a, f) => a + f.size, 0);
+  $('modalCount').textContent = EXTRA_FONTS.length;
+  $('modalSize').textContent = `${totalExtraSize.toFixed(0)} MB`;
+  $('modalTime').textContent = `10~60 秒`;
+
+  $('loadAllBtn').onclick = () => {
+    if (extraLoaded) {
+      alert('✅ 全部字體已經載入完畢！');
+      return;
+    }
+    $('modalBg').classList.add('show');
+  };
+  $('modalCancel').onclick = () => $('modalBg').classList.remove('show');
+  $('modalBg').onclick = e => { if (e.target === $('modalBg')) $('modalBg').classList.remove('show'); };
+
+  // === 載入全部字體 ===
+  $('modalConfirm').onclick = async () => {
+    $('modalBtns').style.display = 'none';
+    $('progressWrap').classList.add('show');
+
+    const fill = $('progressFill');
+    const text = $('progressText');
+    let loaded = 0;
+
+    // 注入 Google Fonts
+    const googleFonts = EXTRA_FONTS.filter(f => f.google).map(f => f.google).join('&family=');
+    if (googleFonts) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${googleFonts}&display=swap`;
+      document.head.appendChild(link);
+      await new Promise(r => { link.onload = r; link.onerror = r; setTimeout(r, 3000); });
+    }
+
+    // 注入 CDN @font-face
+    const cdnFonts = EXTRA_FONTS.filter(f => f.src);
+    cdnFonts.forEach(f => {
+      const style = document.createElement('style');
+      const fontName = f.value.match(/'([^']+)'/)[1];
+      const fmt = f.format || 'truetype';
+      style.textContent = `@font-face { font-family: '${fontName}'; src: url('${f.src}') format('${fmt}'); font-display: swap; }`;
+      document.head.appendChild(style);
+    });
+
+    // 逐一觸發字體下載
+    for (const f of EXTRA_FONTS) {
+      const fontName = f.value.match(/'([^']+)'/)[1];
+      try {
+        await document.fonts.load(`24px "${fontName}"`, f.lang === 'zh' ? '中文字體測試好的!!' : 'Font Test');
+      } catch (e) { /* 略過失敗 */ }
+      loaded++;
+      const pct = Math.round(loaded / EXTRA_FONTS.length * 100);
+      fill.style.width = pct + '%';
+      text.textContent = `載入中... ${loaded} / ${EXTRA_FONTS.length}（${f.name}）`;
+    }
+
+    text.textContent = '✅ 全部載入完成！';
+    extraLoaded = true;
+    populateFontSelect();
+    setTimeout(() => $('modalBg').classList.remove('show'), 800);
+  };
+
+  // === 預覽與控制 ===
+  const poster = $('poster'), content = $('content');
+  const zhText = $('zhText'), zhDeco = $('zhDeco');
+  const enText = $('enText'), enDeco = $('enDeco');
+
+  $('zhInput').oninput = e => zhText.textContent = e.target.value;
+  $('zhDecoInput').oninput = e => zhDeco.textContent = e.target.value;
+  $('enInput').oninput = e => enText.textContent = e.target.value;
+  $('enDecoInput').oninput = e => enDeco.textContent = e.target.value;
+  // 浮水印自動換色：淺底用深灰，深底用白色
+  function getLuminance(hex) {
+    const h = hex.replace('#', '');
+    if (h.length !== 6) return 1;
+    const r = parseInt(h.substr(0, 2), 16);
+    const g = parseInt(h.substr(2, 2), 16);
+    const b = parseInt(h.substr(4, 2), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  }
+  function updateWatermarkColor(bg) {
+    if (!bg || !bg.startsWith('#')) return;
+    const wm = $('watermark');
+    const isDark = getLuminance(bg) < 0.5;
+    wm.style.color = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.28)';
+    // 圖案也跟著反色（深底用白色線條）
+    poster.classList.toggle('dark-bg', isDark);
+  }
+  $('bgColor').oninput = e => { poster.style.background = e.target.value; updateWatermarkColor(e.target.value); };
+  $('zhColor').oninput = e => { zhText.style.color = e.target.value; zhDeco.style.color = e.target.value; };
+  $('enColor').oninput = e => { enText.style.color = e.target.value; enDeco.style.color = e.target.value; };
+  $('zhFont').onchange = e => { zhText.style.fontFamily = e.target.value; zhDeco.style.fontFamily = e.target.value; };
+  $('enFont').onchange = e => { enText.style.fontFamily = e.target.value; enDeco.style.fontFamily = e.target.value; };
+
+  // === 範本分類 ===
+  const TEMPLATES = {
+    business: [
+      { zh: '謝謝您', zhd: '', en: 'thank you', end: '!' },
+      { zh: '感謝', zhd: '!!', en: '辛苦你了', end: '☺' },
+      { zh: '好的', zhd: '!!', en: 'okay', end: '' },
+      { zh: '稍後回覆', zhd: '', en: 'Thank you', end: '!' },
+      { zh: '沒問題', zhd: '', en: 'No problem', end: '!' },
+      { zh: '已處理完成', zhd: '', en: 'Done', end: '!!!' },
+      { zh: '收到', zhd: '了', en: '', end: '✓' },
+      { zh: '了解', zhd: '!!', en: 'got it', end: '' },
+      { zh: '麻煩你了', zhd: '!', en: '3Q', end: '' },
+      { zh: '感謝協助', zhd: '', en: '3Q', end: '' },
+      { zh: '再麻煩您', zhd: '', en: 'please', end: '' },
+      { zh: '辛苦了', zhd: '♡', en: 'great job', end: '' }
+    ],
+    daily: [
+      { zh: '早安', zhd: '啊!!', en: 'Hello', end: '' },
+      { zh: '嗨嗨', zhd: '~', en: 'hi hi', end: '' },
+      { zh: '有你真好', zhd: '♡', en: '', end: '' },
+      { zh: '都可以', zhd: '', en: 'fine', end: '' },
+      { zh: '沒差', zhd: '', en: 'whatever', end: '' },
+      { zh: '加油', zhd: '!!', en: 'go go', end: '!!' },
+      { zh: '洗洗睡', zhd: '', en: 'gn', end: '♡' },
+      { zh: '沒事沒事', zhd: '', en: "it's ok", end: '' },
+      { zh: '晚安', zhd: '♡', en: 'good night', end: '' },
+      { zh: '約嗎', zhd: '?', en: 'hang out?', end: '' },
+      { zh: '想你', zhd: '♡', en: 'miss u', end: '' },
+      { zh: '週末愉快', zhd: '', en: 'weekend', end: '♪' }
+    ],
+    meme: [
+      { zh: '笑死', zhd: '', en: 'LOL', end: '!!!' },
+      { zh: '是在哈囉', zhd: '？', en: 'hello??', end: '' },
+      { zh: '傻眼貓咪', zhd: '', en: 'what??', end: '' },
+      { zh: '森77', zhd: '', en: 'MAD', end: '!!' },
+      { zh: '爆氣', zhd: '', en: 'angry', end: '!!' },
+      { zh: '可撥', zhd: '', en: 'LMAO', end: '' },
+      { zh: '太讚了', zhd: '!!', en: 'awesome', end: '' },
+      { zh: '水啦', zhd: '', en: 'nice', end: '!!' },
+      { zh: '神', zhd: '!!', en: 'epic', end: '' },
+      { zh: '不虧', zhd: '', en: 'worth it', end: '' },
+      { zh: '真香', zhd: '♡', en: 'yummy', end: '' },
+      { zh: '穩', zhd: '', en: 'solid', end: '' },
+      { zh: '母湯', zhd: '', en: 'nope', end: '' },
+      { zh: '我就爛', zhd: '', en: 'im trash', end: '' },
+      { zh: '幫QQ', zhd: '', en: 'RIP', end: '' },
+      { zh: '廢到笑', zhd: '', en: 'so bad', end: 'LOL' },
+      { zh: '佛系', zhd: '', en: 'chill', end: '' },
+      { zh: '你各位', zhd: '', en: "y'all", end: '' },
+      { zh: '嘎哩勒', zhd: '', en: "srsly?", end: '' },
+      { zh: '我宣布', zhd: '', en: 'I declare', end: '!' }
+    ]
+  };
+
+  function renderTemplates(category) {
+    const wrap = $('templates');
+    wrap.innerHTML = '';
+    TEMPLATES[category].forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      const label = t.zh + (t.zhd || '');
+      btn.textContent = label;
+      btn.onclick = () => {
+        $('zhInput').value = t.zh;
+        $('zhDecoInput').value = t.zhd;
+        $('enInput').value = t.en;
+        $('enDecoInput').value = t.end;
+        zhText.textContent = t.zh;
+        zhDeco.textContent = t.zhd;
+        enText.textContent = t.en;
+        enDeco.textContent = t.end;
+      };
+      wrap.appendChild(btn);
+    });
+  }
+  renderTemplates('business');
+
+  // 分類切換
+  document.querySelectorAll('#templateTabs .tab-chip').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('#templateTabs .tab-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTemplates(btn.dataset.tab);
+    };
+  });
+
+  document.querySelectorAll('.chip[data-bg]').forEach(btn => {
+    btn.onclick = () => {
+      const { bg, zh, en } = btn.dataset;
+      poster.style.background = bg;
+      zhText.style.color = zh; zhDeco.style.color = zh;
+      enText.style.color = en; enDeco.style.color = en;
+      $('bgColor').value = bg; $('zhColor').value = zh; $('enColor').value = en;
+      updateWatermarkColor(bg);
+    };
+  });
+  // 初始化浮水印顏色
+  updateWatermarkColor('#f5f1ec');
+
+  document.querySelectorAll('.chip[data-add]').forEach(btn => {
+    btn.onclick = () => {
+      const add = btn.dataset.add;
+      $('zhDecoInput').value += add;
+      zhDeco.textContent += add;
+    };
+  });
+
+  document.querySelectorAll('.chip[data-layout]').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.chip[data-layout]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      content.classList.toggle('layout-side', btn.dataset.layout === 'side');
+    };
+  });
+  document.querySelector('.chip[data-underline]').onclick = (e) => {
+    enText.classList.toggle('underlined');
+    e.target.classList.toggle('active');
+  };
+  document.querySelector('.chip[data-watermark]').onclick = (e) => {
+    $('watermark').classList.toggle('hidden');
+    e.target.classList.toggle('active');
+  };
+  // 透明背景切換
+  document.querySelector('.chip[data-transparent]').onclick = (e) => {
+    poster.classList.toggle('transparent');
+    e.target.classList.toggle('active');
+  };
+
+  // === 模式切換（短句 / 長文） ===
+  const longText = $('longText');
+  const longTextInput = $('longTextInput');
+  const longControls = $('longControls');
+  const charCounter = $('charCounter');
+  const templateSection = $('templateSection');
+
+  const panel = document.querySelector('.panel');
+  document.querySelectorAll('#modeTabs .tab-chip').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('#modeTabs .tab-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const isLong = btn.dataset.mode === 'long';
+      content.classList.toggle('long-mode', isLong);
+      longControls.style.display = isLong ? 'block' : 'none';
+      panel.classList.toggle('mode-long', isLong);
+    };
+  });
+
+  longTextInput.oninput = (e) => {
+    longText.textContent = e.target.value;
+    const len = e.target.value.length;
+    charCounter.textContent = `${len} / 200`;
+    charCounter.classList.toggle('warn', len >= 180);
+  };
+
+  // 字級切換（迷你 / 小字 / 大字）
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      longText.classList.remove('size-tiny', 'size-small', 'size-large');
+      longText.classList.add(`size-${btn.dataset.size}`);
+    };
+  });
+
+  // 對齊切換（靠左 / 置中 / 靠右）
+  document.querySelectorAll('.align-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      longText.classList.remove('align-left', 'align-center', 'align-right');
+      longText.classList.add(`align-${btn.dataset.align}`);
+    };
+  });
+
+  // === 浮水印可編輯 ===
+  $('watermarkInput').oninput = (e) => {
+    const val = e.target.value.trim();
+    const wm = $('watermark');
+    wm.textContent = val;
+    wm.style.display = val ? '' : 'none';
+  };
+
+  // === 底色圖案 ===
+  document.querySelectorAll('.pattern-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      poster.classList.remove('pattern-grid', 'pattern-dot', 'pattern-line');
+      if (btn.dataset.pattern !== 'none') {
+        poster.classList.add(`pattern-${btn.dataset.pattern}`);
+      }
+    };
+  });
+
+  // 長文顏色跟著「中文字」色同步
+  const _origZhColorHandler = $('zhColor').oninput;
+  $('zhColor').oninput = (e) => {
+    _origZhColorHandler(e);
+    longText.style.color = e.target.value;
+  };
+  // 預設顏色套用配色時也同步
+  document.querySelectorAll('.chip[data-bg]').forEach(btn => {
+    const orig = btn.onclick;
+    btn.onclick = () => {
+      orig();
+      longText.style.color = btn.dataset.zh;
+    };
+  });
+
+  $('downloadBtn').onclick = async () => {
+    const isTransparent = poster.classList.contains('transparent');
+    // 暫時移除棋盤格底，讓 html2canvas 拍到真正的透明
+    let originalBg = '';
+    if (isTransparent) {
+      poster.classList.remove('transparent');
+      originalBg = poster.style.background;
+      poster.style.background = 'transparent';
+    }
+    const canvas = await html2canvas(poster, {
+      backgroundColor: isTransparent ? null : null,
+      scale: 3, useCORS: true
+    });
+    // 還原預覽
+    if (isTransparent) {
+      poster.style.background = originalBg;
+      poster.classList.add('transparent');
+    }
+    const link = document.createElement('a');
+    link.download = `poster-${Date.now()}${isTransparent ? '-透明' : ''}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+
+  $('resetBtn').onclick = () => location.reload();
+</script>
+</body>
+</html>
