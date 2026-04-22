@@ -880,8 +880,12 @@
   $('bgColor').oninput = e => { poster.style.background = e.target.value; updateWatermarkColor(e.target.value); };
   $('zhColor').oninput = e => { zhText.style.color = e.target.value; zhDeco.style.color = e.target.value; };
   $('enColor').oninput = e => { enText.style.color = e.target.value; enDeco.style.color = e.target.value; };
-  $('zhFont').onchange = e => { zhText.style.fontFamily = e.target.value; zhDeco.style.fontFamily = e.target.value; longText.style.fontFamily = e.target.value; };
-  $('enFont').onchange = e => { enText.style.fontFamily = e.target.value; enDeco.style.fontFamily = e.target.value; };
+  function updateLongTextFont() {
+    longText.style.fontFamily = `${$('enFont').value}, ${$('zhFont').value}, cursive`;
+  }
+  $('zhFont').onchange = e => { zhText.style.fontFamily = e.target.value; zhDeco.style.fontFamily = e.target.value; updateLongTextFont(); };
+  $('enFont').onchange = e => { enText.style.fontFamily = e.target.value; enDeco.style.fontFamily = e.target.value; updateLongTextFont(); };
+  updateLongTextFont();
 
   // === 範本分類 ===
   const TEMPLATES = {
