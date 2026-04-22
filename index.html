@@ -882,7 +882,11 @@
   $('enColor').oninput = e => { enText.style.color = e.target.value; enDeco.style.color = e.target.value; };
   function updateLongTextFont() {
     const lt = document.getElementById('longText');
-    if (lt) lt.style.fontFamily = `${$('enFont').value}, ${$('zhFont').value}, cursive`;
+    if (!lt) return;
+    const strip = s => s.replace(/,\s*(cursive|serif|sans-serif|monospace)\s*$/i, '').trim();
+    const en = strip($('enFont').value);
+    const zh = strip($('zhFont').value);
+    lt.style.fontFamily = `${en}, ${zh}, cursive`;
   }
   $('zhFont').onchange = e => { zhText.style.fontFamily = e.target.value; zhDeco.style.fontFamily = e.target.value; updateLongTextFont(); };
   $('enFont').onchange = e => { enText.style.fontFamily = e.target.value; enDeco.style.fontFamily = e.target.value; updateLongTextFont(); };
